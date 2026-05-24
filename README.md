@@ -31,6 +31,21 @@ Se ha seguido la arquitectura sugerida en la Etapa 3 de la consigna para garanti
 *   `src/services/`: Capa de servicio `items.service.ts` encargada de las peticiones asíncronas para obtener la cartera de clientes.
 *   `src/types/`: Definición de interfaces de TypeScript para los modelos de `Cliente`, `Producto` y `Pedido`.
 
+```text 
+AguaFress-Mobile/
+├── android/
+├── assets/
+└── src/
+    ├── app/          # Configuración global, navegación principal o rutas (Expo Router)
+    ├── components/   # Componentes visuales reutilizables (Botones, Tarjetas)
+    ├── constants/    # Valores fijos (Colores, Dimensiones, URLs de APIs)
+    ├── hooks/        # Funciones personalizadas de React (useAuth, useFetch)
+    ├── services/     # Llamados a APIs externas y lógica de datos (Axios, Fetch)
+    ├── types/        # Definiciones de TypeScript (Interfaces, Tipos)
+    └── App.tsx       # Punto de entrada de la aplicación (si no usas Expo Router)
+
+```
+
 ### Tecnologías principales
 *   **React Native + Expo** (SDK 50+)
 *   **Expo Router** para una navegación nativa y fluida.
