@@ -1,52 +1,99 @@
-import { Stack } from 'expo-router';
+import { useEffect } from 'react';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { theme } from '../constants/theme';
+import { AuthProvider, useAuthContext } from '../components/AuthProvider';
 
-export default function RootLayout() {
+// ─── Guardia de rutas ─────────────────────────────────────────────────────────
+
+/**
+ * Redirige al login si el usuario no está autenticado e intenta
+ * acceder a rutas protegidas. Redirige al catálogo si ya está logueado
+ * e intenta volver al login.
+ */
+function RouteGuard() {
+  const { isAuthenticated, isLoading } = useAuthContext();
+  const segments = useSegments();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (isLoading) return; // Espera a que se resuelva el estado inicial
+
+    const inAuthScreen = segments[0] === 'login';
+
+    if (!isAuthenticated && !inAuthScreen) {
+      // No logueado y quiere entrar a una ruta protegida → login
+      router.replace('/login');
+    } else if (isAuthenticated && inAuthScreen) {
+      // Ya logueado y está en login → catálogo
+      router.replace('/items');
+    }
+  }, [isAuthenticated, isLoading, segments]);
+
+  return null;
+}
+
+// ─── Stack con navegación configurada ────────────────────────────────────────
+
+function AppStack() {
   return (
     <>
-      {/* StatusBar para controlar el estilo de la barra superior del celular (RNF01) */}
       <StatusBar style="light" />
-      
-      {/* Configuración de las transiciones y títulos de las pantallas */}
+      <RouteGuard />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: theme.colors.primaryDark, // Azul oscuro corporativo de aguaFress
+            backgroundColor: theme.colors.primaryDark,
           },
-          headerTintColor: '#fff', // Texto del encabezado en blanco
+          headerTintColor: '#fff',
           headerTitleStyle: {
             fontWeight: 'bold',
           },
           contentStyle: {
-            backgroundColor: theme.colors.background, // Fondo celeste tenue para todas las pantallas
+            backgroundColor: theme.colors.background,
           },
         }}
       >
-        {/* Pantalla Principal / Bienvenida */}
-        <Stack.Screen 
-          name="index" 
-          options={{ title: 'aguaFress' }} 
+        {/* Pantalla de bienvenida/splash */}
+        <Stack.Screen
+          name="index"
+          options={{ title: 'aguaFress', headerShown: false }}
         />
-        
-        {/* Pantalla del Listado / Catálogo */}
-        <Stack.Screen 
-          name="items/index" 
-          options={{ title: 'Nuestro Catálogo' }} 
+
+        {/* Login — sin header para diseño limpio */}
+        <Stack.Screen
+          name="login"
+          options={{ title: 'Ingresar', headerShown: false }}
         />
-        
-        {/* Pantalla de Detalle dinámico del producto */}
-        <Stack.Screen 
-          name="items/[id]" 
-          options={{ title: 'Detalle del Producto' }} 
+
+        {/* Catálogo de productos */}
+        <Stack.Screen
+          name="items/index"
+          options={{ title: 'Nuestro Catálogo' }}
         />
-        
-        {/* Pantalla del Formulario de pedido / Carrito */}
-        <Stack.Screen 
-          name="form" 
-          options={{ title: 'Confirmar Pedido' }} 
+
+        {/* Detalle de producto */}
+        <Stack.Screen
+          name="items/[id]"
+          options={{ title: 'Detalle del Producto' }}
+        />
+
+        {/* Formulario de pedido */}
+        <Stack.Screen
+          name="form"
+          options={{ title: 'Confirmar Pedido' }}
         />
       </Stack>
     </>
+  );
+}
+
+// ─── Root Layout ──────────────────────────────────────────────────────────────
+
+export default function RootLayout() {
+  return (
+    <AuthProvider>
+      <AppStack />
+    </AuthProvider>
   );
 }
