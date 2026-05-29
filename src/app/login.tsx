@@ -1,62 +1,35 @@
-import React, { useState, useEffect } from 'react';
+import { useRouter } from "expo-router";
 import {
-  StyleSheet,
-  Text,
-  View,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  Alert,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { theme } from '../constants/theme';
-import { useAuthContext } from '../components/AuthProvider';
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from "react-native";
+import { Button } from "../components/Button";
+import { borderRadius, colors, spacing, typography } from "../constants/theme";
+import { useLoginForm } from "../hooks/useLoginForm";
 
 export default function LoginScreen() {
   const router = useRouter();
-  const { login, isLoading, error, isAuthenticated, clearError } = useAuthContext();
+  const { form, errors, isLoading, setField, submit } = useLoginForm();
 
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-
-  // Si ya está logueado, redirige directo al catálogo
-  useEffect(() => {
-    if (isAuthenticated) {
-      router.replace('/items');
+  async function handleLogin() {
+    const user = await submit();
+    if (user) {
+      router.replace({
+        pathname: "/catalog",
+        params: { userName: user.name, businessName: user.businessName },
+      });
     }
-  }, [isAuthenticated]);
-
-  // Muestra errores del servicio como alerta nativa
-  useEffect(() => {
-    if (error) {
-      Alert.alert('Error al ingresar', error, [
-        { text: 'Entendido', onPress: clearError },
-      ]);
-    }
-  }, [error]);
-
-  const handleLogin = async () => {
-    const trimmedEmail = email.trim();
-
-    if (!trimmedEmail || !password) {
-      Alert.alert('Campos incompletos', 'Por favor ingresá tu email y contraseña.');
-      return;
-    }
-
-    const success = await login({ email: trimmedEmail, password });
-    if (success) {
-      router.replace('/items');
-    }
-  };
+  }
 
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       <ScrollView
         contentContainerStyle={styles.container}
@@ -64,86 +37,64 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
       >
         {/* Marca */}
-        <View style={styles.brandContainer}>
-          <Text style={styles.brandTitle}>aguaFress</Text>
-          <Text style={styles.brandSubtitle}>Distribución mayorista</Text>
+        <View style={styles.header}>
+          <Text style={styles.brand}>aguaFress</Text>
+          <Text style={styles.brandSub}>Distribución mayorista</Text>
         </View>
 
-        {/* Tarjeta de formulario */}
+        {/* Formulario */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Ingresar</Text>
-          <Text style={styles.cardSubtitle}>
-            Accedé con los datos que te dio tu preventista
-          </Text>
 
-          {/* Campo email */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="tu@email.com"
-              placeholderTextColor={theme.colors.gray}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              editable={!isLoading}
+          {/* Email */}
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={[styles.input, errors.email ? styles.inputError : null]}
+            placeholder="tu@email.com"
+            placeholderTextColor={colors.gray}
+            value={form.email}
+            onChangeText={(v) => setField("email", v)}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoCorrect={false}
+            editable={!isLoading}
+          />
+          {errors.email ? (
+            <Text style={styles.errorText}>{errors.email}</Text>
+          ) : null}
+
+          {/* Contraseña */}
+          <Text style={[styles.label, styles.labelSpacing]}>Contraseña</Text>
+          <TextInput
+            style={[styles.input, errors.password ? styles.inputError : null]}
+            placeholder="••••••••"
+            placeholderTextColor={colors.gray}
+            value={form.password}
+            onChangeText={(v) => setField("password", v)}
+            secureTextEntry
+            editable={!isLoading}
+          />
+          {errors.password ? (
+            <Text style={styles.errorText}>{errors.password}</Text>
+          ) : null}
+
+          {/* Botón */}
+          <View style={styles.buttonWrapper}>
+            <Button
+              label="Entrar al catálogo"
+              onPress={handleLogin}
+              isLoading={isLoading}
             />
           </View>
-
-          {/* Campo contraseña */}
-          <View style={styles.fieldGroup}>
-            <Text style={styles.label}>Contraseña</Text>
-            <View style={styles.passwordRow}>
-              <TextInput
-                style={[styles.input, styles.passwordInput]}
-                placeholder="••••••••"
-                placeholderTextColor={theme.colors.gray}
-                value={password}
-                onChangeText={setPassword}
-                secureTextEntry={!showPassword}
-                autoCapitalize="none"
-                autoCorrect={false}
-                editable={!isLoading}
-              />
-              <Pressable
-                style={styles.togglePassword}
-                onPress={() => setShowPassword((v) => !v)}
-              >
-                <Text style={styles.togglePasswordText}>
-                  {showPassword ? 'Ocultar' : 'Ver'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Botón principal */}
-          <Pressable
-            style={[styles.loginButton, isLoading && styles.loginButtonDisabled]}
-            onPress={handleLogin}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <ActivityIndicator color="#fff" size="small" />
-            ) : (
-              <Text style={styles.loginButtonText}>Entrar al catálogo</Text>
-            )}
-          </Pressable>
         </View>
 
-        {/* Ayuda para el MVP: credenciales de prueba */}
-        <View style={styles.devHint}>
-          <Text style={styles.devHintTitle}>Cuentas de prueba</Text>
-          <Text style={styles.devHintText}>mercado.sol@gmail.com · 1234</Text>
-          <Text style={styles.devHintText}>kiosco.luna@gmail.com · 1234</Text>
-          <Text style={styles.devHintText}>almacen.norte@gmail.com · 1234</Text>
+        {/* Cuentas de prueba */}
+        <View style={styles.hint}>
+          {/* <Text style={styles.hintTitle}>Cuentas de prueba · pass: 1234</Text>
+          <Text style={styles.hintText}>carlos@gmail.com</Text>
+          <Text style={styles.hintText}>ana@gmail.com</Text>
+          <Text style={styles.hintText}>roberto@gmail.com</Text> */}
         </View>
-
-        {/* Contacto soporte */}
-        <Text style={styles.supportText}>
-          ¿Problemas para ingresar? Contactá a tu preventista.
-        </Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -152,137 +103,97 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   flex: {
     flex: 1,
-    backgroundColor: theme.colors.background,
+    backgroundColor: colors.background,
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
-    padding: theme.spacing.lg,
-    gap: theme.spacing.lg,
+    justifyContent: "center",
+    padding: spacing.lg,
+    gap: spacing.lg,
   },
-  brandContainer: {
-    alignItems: 'center',
-    marginBottom: theme.spacing.sm,
+  header: {
+    alignItems: "center",
   },
-  brandTitle: {
-    fontSize: 44,
-    fontWeight: 'bold',
-    color: theme.colors.primary,
+  brand: {
+    fontSize: typography.sizes.display,
+    fontWeight: "bold",
+    color: colors.primary,
     letterSpacing: -1,
   },
-  brandSubtitle: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.primaryDark,
-    fontWeight: '500',
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-    marginTop: 2,
+  brandSub: {
+    fontSize: typography.sizes.caption,
+    color: colors.primaryDark,
+    textTransform: "uppercase",
+    letterSpacing: 1,
+    marginTop: 4,
   },
   card: {
-    backgroundColor: theme.colors.surface,
-    borderRadius: theme.borderRadius.lg,
-    padding: theme.spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
     borderWidth: 1,
-    borderColor: theme.colors.border,
+    borderColor: colors.border,
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
   },
   cardTitle: {
-    fontSize: theme.typography.sizes.title,
-    fontWeight: 'bold',
-    color: theme.colors.secondary,
-    marginBottom: theme.spacing.xs,
-  },
-  cardSubtitle: {
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.gray,
-    marginBottom: theme.spacing.lg,
-    lineHeight: 20,
-  },
-  fieldGroup: {
-    marginBottom: theme.spacing.md,
+    fontSize: typography.sizes.title,
+    fontWeight: "bold",
+    color: colors.secondary,
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: theme.typography.sizes.body,
-    fontWeight: '600',
-    color: theme.colors.secondary,
-    marginBottom: theme.spacing.xs,
+    fontSize: typography.sizes.body,
+    fontWeight: "600",
+    color: colors.secondary,
+    marginBottom: spacing.xs,
+  },
+  labelSpacing: {
+    marginTop: spacing.sm,
   },
   input: {
     height: 48,
     borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.borderRadius.md,
-    paddingHorizontal: theme.spacing.md,
-    fontSize: theme.typography.sizes.body,
-    color: theme.colors.secondary,
-    backgroundColor: theme.colors.background,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    fontSize: typography.sizes.body,
+    color: colors.secondary,
+    backgroundColor: colors.background,
   },
-  passwordRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: theme.spacing.sm,
+  inputError: {
+    borderColor: colors.error,
   },
-  passwordInput: {
-    flex: 1,
+  errorText: {
+    fontSize: typography.sizes.caption,
+    color: colors.error,
+    marginTop: spacing.xs,
   },
-  togglePassword: {
-    paddingHorizontal: theme.spacing.sm,
-    paddingVertical: theme.spacing.sm,
+  buttonWrapper: {
+    marginTop: spacing.lg,
   },
-  togglePasswordText: {
-    color: theme.colors.primary,
-    fontWeight: '600',
-    fontSize: theme.typography.sizes.body,
-  },
-  loginButton: {
-    backgroundColor: theme.colors.primary,
-    height: 50,
-    borderRadius: theme.borderRadius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-    elevation: 2,
-    shadowColor: theme.colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  loginButtonDisabled: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: '#fff',
-    fontSize: theme.typography.sizes.subtitle,
-    fontWeight: 'bold',
-  },
-  devHint: {
-    backgroundColor: '#FFF8E1',
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.md,
+  hint: {
+    backgroundColor: "#FFF8E1",
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
     borderWidth: 1,
-    borderColor: '#FFE082',
+    borderColor: "#FFE082",
     gap: 4,
   },
-  devHintTitle: {
-    fontSize: theme.typography.sizes.caption,
-    fontWeight: 'bold',
-    color: '#F57F17',
-    marginBottom: 4,
-    textTransform: 'uppercase',
+  hintTitle: {
+    fontSize: typography.sizes.caption,
+    fontWeight: "bold",
+    color: colors.warning,
+    textTransform: "uppercase",
     letterSpacing: 0.5,
+    marginBottom: 4,
   },
-  devHintText: {
-    fontSize: theme.typography.sizes.caption,
-    color: '#795548',
-    fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
-  },
-  supportText: {
-    textAlign: 'center',
-    fontSize: theme.typography.sizes.caption,
-    color: theme.colors.gray,
+  hintText: {
+    fontSize: typography.sizes.caption,
+    color: "#795548",
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
   },
 });
